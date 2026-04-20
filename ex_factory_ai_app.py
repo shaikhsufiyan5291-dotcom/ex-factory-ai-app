@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 # --------------------------------------------------
 # Page configuration
@@ -30,7 +29,9 @@ if uploaded_file is not None:
     st.subheader("🔍 AI detected these columns")
     st.write(list(df.columns))
 
-    # Sidebar configuration
+    # --------------------------------------------------
+    # AI‑style configuration (Sidebar)
+    # --------------------------------------------------
     with st.sidebar:
         st.header("🧠 AI Configuration")
 
@@ -40,7 +41,6 @@ if uploaded_file is not None:
         qty_col = st.selectbox("📦 Quantity column", df.columns)
 
         base_col = st.selectbox("💰 Ex‑Factory (Basic) value column", df.columns)
-        gst_col = st.selectbox("🧾 GST / Tax column", df.columns)
         transport_col = st.selectbox("🚚 Transport cost column", df.columns)
         loading_col = st.selectbox("🏗️ Loading cost column", df.columns)
 
@@ -94,13 +94,13 @@ if uploaded_file is not None:
         len(df_calc[df_calc["MARGIN_%"] < target_margin])
     )
 
-    # Loss alert
+    # Alert: loss‑making records
     loss_df = df_calc[df_calc["MARGIN"] < 0]
     if not loss_df.empty:
         st.error(f"❌ {len(loss_df)} records are loss‑making")
 
     # --------------------------------------------------
-    # Focus View
+    # Focus View (Table‑based, stable)
     # --------------------------------------------------
     st.subheader(f"🎯 Focus: {focus} Level Performance")
 
@@ -110,31 +110,17 @@ if uploaded_file is not None:
             Margin=("MARGIN", "sum"),
             Margin_Percent=("MARGIN_%", "mean")
         ).reset_index()
-        x_col = invoice_col
     else:
         view = df_calc.groupby(customer_col).agg(
             Sales=(base_col, "sum"),
             Margin=("MARGIN", "sum"),
             Margin_Percent=("MARGIN_%", "mean")
         ).reset_index()
-        x_col = customer_col
 
-    st.dataframe(view, use_container_width=True)
-
-    # --------------------------------------------------
-    # Chart (no seaborn)
-    # --------------------------------------------------
-    st.subheader("📈 Top 10 Margin Contributors")
-
-    top10 = view.sort_values("Margin", ascending=False).head(10)
-
-    fig, ax = plt.subplots(figsize=(9, 4))
-    ax.bar(top10[x_col].astype(str), top10["Margin"])
-    ax.set_title("Top 10 Margin Contributors")
-    ax.set_ylabel("Margin")
-    plt.xticks(rotation=45)
-
-    st.pyplot(fig)
+    st.dataframe(
+        view.sort_values("Margin", ascending=False),
+        use_container_width=True
+    )
 
 else:
     st.info("⬆️ Upload an Ex‑Factory Excel file to begin analysis")
