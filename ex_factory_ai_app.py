@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
 
 # --------------------------------------------------
-# Page setup
+# Page configuration
 # --------------------------------------------------
 st.set_page_config(
     page_title="Ex‑Factory AI Analyst",
@@ -25,7 +24,7 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file:
 
-    # Read file
+    # Read Excel
     df = pd.read_excel(uploaded_file)
     st.success("✅ File uploaded successfully")
 
@@ -33,7 +32,7 @@ if uploaded_file:
     st.write(list(df.columns))
 
     # --------------------------------------------------
-    # AI‑style configuration (in sidebar)
+    # AI‑style configuration (Sidebar)
     # --------------------------------------------------
     with st.sidebar:
         st.header("🧠 AI Configuration")
@@ -77,3 +76,68 @@ if uploaded_file:
     )
 
     df_calc["RAW_COST"] = df_calc[qty_col] * raw_cost_per_unit
+    df_calc["MARGIN"] = df_calc["NET_SALES"] - df_calc["RAW_COST"]
+
+    df_calc["MARGIN_%"] = np.where(
+        df_calc["NET_SALES"] != 0,
+        (df_calc["MARGIN"] / df_calc["NET_SALES"]) * 100,
+        0
+    )
+
+    # --------------------------------------------------
+    # KPIs
+    # --------------------------------------------------
+    st.subheader("📊 Ex‑Factory Performance Summary")
+
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Total Ex‑Factory Sales", round(df_calc[base_col].sum(), 2))
+    k2.metric("Total Margin", round(df_calc["MARGIN"].sum(), 2))
+    k3.metric(
+        "Records Below Target Margin",
+        len(df_calc[df_calc["MARGIN_%"] < target_margin])
+    )
+
+    # Alert: loss‑making records
+    loss_df = df_calc[df_calc["MARGIN"] < 0]
+    if not loss_df.empty:
+        st.error(f"❌ {len(loss_df)} records are loss‑making")
+
+    # --------------------------------------------------
+    # Focus view
+    # --------------------------------------------------
+    st.subheader(f"🎯 Focus: {focus} Level Performance")
+
+    if focus == "Invoice":
+        view = df_calc.groupby(invoice_col).agg(
+            Sales=(base_col, "sum"),
+            Margin=("MARGIN", "sum"),
+            Margin_Percent=("MARGIN_%", "mean")
+        ).reset_index()
+        x_col = invoice_col
+    else:
+        view = df_calc.groupby(customer_col).agg(
+            Sales=(base_col, "sum"),
+            Margin=("MARGIN", "sum"),
+            Margin_Percent=("MARGIN_%", "mean")
+        ).reset_index()
+        x_col = customer_col
+
+    st.dataframe(view, use_container_width=True)
+
+    # --------------------------------------------------
+    # Visualization (NO seaborn)
+    # --------------------------------------------------
+    st.subheader("📈 Top 10 Margin Contributors")
+
+    top10 = view.sort_values("Margin", ascending=False).head(10)
+
+    fig, ax = plt.subplots(figsize=(9, 4))
+    ax.bar(top10[x_col].astype(str), top10["Margin"])
+    ax.set_ylabel("Margin")
+    ax.set_title("Top 10 Margin Contributors")
+    plt.xticks(rotation=45)
+
+    st.pyplot(fig)
+
+else:
+m
