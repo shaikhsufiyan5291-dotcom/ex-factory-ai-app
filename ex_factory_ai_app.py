@@ -22,8 +22,7 @@ uploaded_file = st.file_uploader(
     type=["xlsx"]
 )
 
-if uploaded_file:
-
+if uploaded_file is not None:
     # Read Excel
     df = pd.read_excel(uploaded_file)
     st.success("✅ File uploaded successfully")
@@ -31,9 +30,7 @@ if uploaded_file:
     st.subheader("🔍 AI detected these columns")
     st.write(list(df.columns))
 
-    # --------------------------------------------------
-    # AI‑style configuration (Sidebar)
-    # --------------------------------------------------
+    # Sidebar configuration
     with st.sidebar:
         st.header("🧠 AI Configuration")
 
@@ -89,21 +86,21 @@ if uploaded_file:
     # --------------------------------------------------
     st.subheader("📊 Ex‑Factory Performance Summary")
 
-    k1, k2, k3 = st.columns(3)
-    k1.metric("Total Ex‑Factory Sales", round(df_calc[base_col].sum(), 2))
-    k2.metric("Total Margin", round(df_calc["MARGIN"].sum(), 2))
-    k3.metric(
-        "Records Below Target Margin",
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Ex‑Factory Sales", round(df_calc[base_col].sum(), 2))
+    col2.metric("Total Margin", round(df_calc["MARGIN"].sum(), 2))
+    col3.metric(
+        "Below Target % Records",
         len(df_calc[df_calc["MARGIN_%"] < target_margin])
     )
 
-    # Alert: loss‑making records
+    # Loss alert
     loss_df = df_calc[df_calc["MARGIN"] < 0]
     if not loss_df.empty:
         st.error(f"❌ {len(loss_df)} records are loss‑making")
 
     # --------------------------------------------------
-    # Focus view
+    # Focus View
     # --------------------------------------------------
     st.subheader(f"🎯 Focus: {focus} Level Performance")
 
@@ -125,7 +122,7 @@ if uploaded_file:
     st.dataframe(view, use_container_width=True)
 
     # --------------------------------------------------
-    # Visualization (NO seaborn)
+    # Chart (no seaborn)
     # --------------------------------------------------
     st.subheader("📈 Top 10 Margin Contributors")
 
@@ -133,11 +130,11 @@ if uploaded_file:
 
     fig, ax = plt.subplots(figsize=(9, 4))
     ax.bar(top10[x_col].astype(str), top10["Margin"])
-    ax.set_ylabel("Margin")
     ax.set_title("Top 10 Margin Contributors")
+    ax.set_ylabel("Margin")
     plt.xticks(rotation=45)
 
     st.pyplot(fig)
 
 else:
-m
+    st.info("⬆️ Upload an Ex‑Factory Excel file to begin analysis")
